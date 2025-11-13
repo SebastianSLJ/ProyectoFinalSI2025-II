@@ -6,9 +6,8 @@
 |------------|------------|
 |Jefferson Jair Figueroa Escobar | Jfigueroa@unal.edu.co | 
 | Juan David Beltran Orjuela | jbeltrano@unal.edu.co |
-|John Jairo Paez Albino | correo |
-|Juan Sebastain Leguizamón Silva | correo |
-|Jhoan Smith Yáéz Forero | correo | paso un niño sobre el y le disparo con su rayo lazer 👽
+|John Jairo Paez Albino | jopaeza@unal.edu.co |
+|Juan Sebastain Leguizamón Silva | jleguizamons@unal.edu.co |
 
 
 
