@@ -4,6 +4,7 @@ import time
 import requests
 import os
 import sys
+import datetime
 import pymongo
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -46,14 +47,26 @@ def url_login():
         'state' : state # Es un token de seguridad que previene ataques (Opcional pero recomendado)
     }
     return f'https://accounts.spotify.com/authorize?{urlencode(params)}'
-    
+
+# Landing page   
 @app.route('/')
 def inicio():    
-    return render_template('index.html', url=url_login())
+    return render_template('select.html', url=url_login(), url2=url_for('dashboard'))
 
+# Ruta para el login de spotify
 @app.route('/login')
 def login():
     return redirect(url_login())
+
+# Ruta de reproductor
+@app.route('/player')
+def player():
+    return render_template('player.html')
+
+# Ruta del dashboard (admin)
+@app.route('/dashboard')
+def dashboard():
+    return render_template('panel.html')
 
 # Función para recibir los parametros enviados por la ruta login especificada anteriormente
 # Luego del login se envian dos parametros (el code y el state)
@@ -75,7 +88,7 @@ def callback():
     # Guardamos también en una variable global para el hilo en segundo plano del loop_player
     global access_token_global
     access_token_global = token_response['access_token']
-    return redirect(url_for('hola'))
+    return redirect(url_for('player'))
 
 # Petición al API para obtención del codigo de inicio.
 def UserToken(code):
@@ -95,9 +108,7 @@ def UserToken(code):
     response = requests.post(url, headers= headers, data=body)
     return response.json()
 
-@app.route('/hola')
-def hola():
-    return render_template('hola.html')
+
 '''
 # Petición para traer información del usuario (Debug)
 @app.route('/player')
@@ -151,6 +162,9 @@ def player():
 def insertar_canciones(data_song):
     result = data_conn.collection.insert_one(data_song)
 
+def insertar_reproduccion(data_reproduccion):
+    result = data_conn.reproducciones_collection.insert_one(data_reproduccion)
+
 
 def loop_player():
     print("loop iniciando correctamente :D")
@@ -188,6 +202,39 @@ def loop_player():
                         "cancion": name_song
                     }
                     insertar_canciones(datos_cancion)
+
+                    # Cola de reproducciones
+                    cancion = data_conn.collection.find_one({'spotify_id': id_cancion})
+                    if cancion:
+                        # Insertar reproduccion con metricas
+                        dia_semana = datetime.datetime.now().strftime('%A')  # lunes, martes, etc.
+                        hora = datetime.datetime.now().hour
+                        
+                        # Calcular metricas automáticas
+                        puntuacion_base = random.uniform(6.0, 9.5)  # Ejemplos (POR IMPLEMENTAR AHHHHHHHHHH)
+                        impacto_base = random.uniform(5.0, 25.0)    
+                        aforo_base = random.randint(50, 95)         
+                        
+                        # Ajustar por dia y hora
+                        if dia_semana in ['Friday', 'Saturday']:
+                            puntuacion_base += 0.5
+                            impacto_base += 5.0
+                        
+                        if 20 <= hora <= 23:  # Horario pico EJEMPLOOOOO POR AJUSTAR AAAAAAAAAAAA
+                            aforo_base += 10
+                        
+                        reproduccion_data = {
+                            'cancion_id': cancion['_id'],
+                            'fecha': datetime.datetime.now(),
+                            'puntuacion': round(puntuacion_base, 1),
+                            'impacto_ventas': round(impacto_base, 1),
+                            'aforo': min(aforo_base, 100),  
+                            'dia_semana': dia_semana,
+                            'hora': hora
+                        }                        
+                        insertar_reproduccion(reproduccion_data)
+                        print(f"Reproducción registrada: {name_song} - Puntuación: {reproduccion_data['puntuacion']}")
+                    
                     print(f" Nueva canción detectada y guardada: {name_song}")
             time.sleep(10)
         except Exception as e:
@@ -203,7 +250,183 @@ def estado():
         return jsonify(ultima)
     else:
         return jsonify({"status": "No hay canciones registradas"})
+    
+'''
+@app.route('/api/canciones-metricas')
+def canciones_metricas():
+    try:
+        # Canciones en el database (para dashboard)
+        canciones = list(data_conn.collection.find().limit(20))
+        
+        canciones_formateadas = []
+        for cancion in canciones:
+            canciones_formateadas.append({
+                'id': str(cancion['_id']),
+                'nombre': cancion['cancion'],  
+                'artista': cancion['artista'],
+                'album': cancion['album'],
+                'imagen_url': cancion['imagen_album'],
+                'reproducciones': random.randint(1, 15),  # Valor por defecto temporal xd (No hay timpo!!!!)
+                'puntuacion': round(random.uniform(7.0, 9.5), 1),    # Valor por defecto temporal xd 
+                'impacto_ventas': round(random.uniform(10.0, 25.0), 1)  # Valor por defecto temporal xd 
+            })
+        
+        return jsonify({'canciones': canciones_formateadas})
+        
+    except Exception as e:
+        print(f"Error en canciones-metricas: {e}")
+        return jsonify({'error': str(e)}), 500
+'''
+''
+@app.route('/api/canciones-metricas')
+def canciones_metricas():
+    try:        
+        # Agregación para métricas 
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'Reproducciones',
+                    'localField': '_id', 
+                    'foreignField': 'cancion_id',
+                    'as': 'reproducciones_data'
+                }
+            },
+            {
+                '$project': {
+                    'nombre': '$cancion',
+                    'artista': 1,
+                    'album': 1,
+                    'imagen_url': '$imagen_album',
+                    'reproducciones': { '$size': '$reproducciones_data' },
+                    'puntuacion_promedio': { '$avg': '$reproducciones_data.puntuacion' },
+                    'impacto_ventas_promedio': { '$avg': '$reproducciones_data.impacto_ventas' }
+                }
+            },
+            {
+                '$sort': { 'puntuacion_promedio': -1 }
+            },
+            {
+                '$limit': 50
+            }
+        ]
+        
+        canciones = list(data_conn.collection.find().limit(20))
+        reproduccion = list(data_conn.reproducciones_collection.find())
+        
+        canciones_formateadas = []
+        
+        for cancion in canciones:
+            # Filtrar reproducciones de esta canción específica
+            reproducciones_cancion = [
+                r for r in reproduccion 
+                if str(r['cancion_id']) == str(cancion['_id'])
+            ]
+            
+            # Calcular metricas basadas en las reproducciones
+            total_reproducciones = len(reproducciones_cancion)
+            
+            if total_reproducciones > 0:
+                # Calcular promedios
+                puntuacion_promedio = sum(r['puntuacion'] for r in reproducciones_cancion) / total_reproducciones
+                impacto_promedio = sum(r['impacto_ventas'] for r in reproducciones_cancion) / total_reproducciones
+            else:
+                # Si no hay reproducciones, usar valores por defecto
+                puntuacion_promedio = 0
+                impacto_promedio = 0
+            
+            canciones_formateadas.append({
+                'id': str(cancion['_id']),
+                'nombre': cancion['cancion'],  
+                'artista': cancion['artista'],
+                'album': cancion['album'],
+                'imagen_url': cancion['imagen_album'],
+                'reproducciones': total_reproducciones,
+                'puntuacion': round(puntuacion_promedio, 1),
+                'impacto_ventas': round(impacto_promedio, 1)
+            })
+        
+        # Ordenar por puntuación (mayor a menor)
+        canciones_formateadas.sort(key=lambda x: x['puntuacion'], reverse=True)
+        
+        return jsonify({'canciones': canciones_formateadas})
+        
+    except Exception as e:
+        print(f"Error en canciones-metricas: {e}")
+        return cargar_canciones_simple()
+    
+def cargar_canciones_simple():
+    try:
+        canciones = list(data_conn['Canciones'].find().limit(20))  
+        reproduccion = list(data_conn.reproducciones_collection.find())  
+        canciones_formateadas = []
+        for cancion in canciones:
+            # Filtrar reproducciones de esta canción específica
+            reproducciones_cancion = [
+                r for r in reproduccion 
+                if str(r['cancion_id']) == str(cancion['_id'])
+            ]
+        if total_reproducciones > 0:
+                # Calcular promedios
+                puntuacion_promedio = sum(r['puntuacion'] for r in reproducciones_cancion) / total_reproducciones
+                impacto_promedio = sum(r['impacto_ventas'] for r in reproducciones_cancion) / total_reproducciones
+        else:
+            # Si no hay reproducciones, usar valores por defecto
+            puntuacion_promedio = 0
+            impacto_promedio = 0            
+            # Calcular metricas basadas en las reproducciones
+        total_reproducciones = len(reproducciones_cancion)
+        for cancion in canciones:
+            canciones_formateadas.append({
+                'id': str(cancion['_id']),
+                'nombre': cancion['cancion'],
+                'artista': cancion['artista'],
+                'album': cancion['album'],
+                'imagen_url': cancion['imagen_album'],
+                'reproducciones': total_reproducciones,
+                'puntuacion': round(puntuacion_promedio, 1),
+                'impacto_ventas': round(impacto_promedio, 1)
+            })
+        
+        return jsonify({'canciones': canciones_formateadas})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+'' 
 
+@app.route('/api/grafica-ventas')
+def grafica_ventas():
+    try:
+        reproducciones = list(data_conn.reproducciones_collection.find())
+        
+        # Agrupar por día de la semana
+        ventas_por_dia = {
+            'Monday': [], 'Tuesday': [], 'Wednesday': [], 
+            'Thursday': [], 'Friday': [], 'Saturday': [], 'Sunday': []
+        }
+        
+        for repro in reproducciones:
+            dia = repro['dia_semana']
+            ventas_por_dia[dia].append(repro['impacto_ventas'])
+        
+        # Calcular promedios
+        datos_grafica = {
+            'dias': ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+            'ventas_promedio': [
+                round(sum(ventas_por_dia['Monday']) / len(ventas_por_dia['Monday']), 1) if ventas_por_dia['Monday'] else 0,
+                round(sum(ventas_por_dia['Tuesday']) / len(ventas_por_dia['Tuesday']), 1) if ventas_por_dia['Tuesday'] else 0,
+                round(sum(ventas_por_dia['Wednesday']) / len(ventas_por_dia['Wednesday']), 1) if ventas_por_dia['Wednesday'] else 0,
+                round(sum(ventas_por_dia['Thursday']) / len(ventas_por_dia['Thursday']), 1) if ventas_por_dia['Thursday'] else 0,
+                round(sum(ventas_por_dia['Friday']) / len(ventas_por_dia['Friday']), 1) if ventas_por_dia['Friday'] else 0,
+                round(sum(ventas_por_dia['Saturday']) / len(ventas_por_dia['Saturday']), 1) if ventas_por_dia['Saturday'] else 0,
+                round(sum(ventas_por_dia['Sunday']) / len(ventas_por_dia['Sunday']), 1) if ventas_por_dia['Sunday'] else 0
+            ]
+        }
+        
+        return jsonify(datos_grafica)
+        
+    except Exception as e:
+        print(f"Error en grafica-ventas: {e}")
+        return jsonify({'error': str(e)}), 500
+    
 
 if __name__ == '__main__':
     hilo = threading.Thread(target=loop_player, daemon=True)

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Métricas Musicales</title>
+    <style>
+        :root {
+            --primary: #1DB954;
+            --dark: #121212;
+            --darker: #0a0a0a;
+            --light: #ffffff;
+            --gray: #b3b3b3;
+            --card-bg: #181818;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--darker), #2a0a4a);
+            color: var(--light);
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background-color: rgba(18, 18, 18, 0.9);
+            padding: 20px 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .logo h1 {
+            color: var(--primary);
+            font-size: 24px;
+        }
+        
+        .logo p {
+            color: var(--gray);
+            font-size: 12px;
+        }
+        
+        .nav-links {
+            list-style: none;
+            padding: 0 15px;
+        }
+        
+        .nav-links li {
+            margin-bottom: 10px;
+        }
+        
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: var(--gray);
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav-links a:hover, .nav-links a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+        
+        .nav-links i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 30px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+        }
+        
+        .date-filter {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .date-filter select, .date-filter button {
+            padding: 8px 15px;
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: var(--light);
+        }
+        
+        .date-filter button {
+            background-color: var(--primary);
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .date-filter button:hover {
+            background-color: #1ed760;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-card h3 {
+            font-size: 14px;
+            color: var(--gray);
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .trend {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .trend.up {
+            color: var(--primary);
+        }
+        
+        .trend.down {
+            color: #f15e5e;
+        }
+        
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chart-card h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+        
+        /* Songs Table */
+        .songs-table {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .table-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-header h2 {
+            font-size: 18px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        th {
+            color: var(--gray);
+            font-weight: normal;
+            font-size: 14px;
+        }
+        
+        .song-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .song-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+        
+        .rating {
+            display: flex;
+            align-items: center;
+        }
+        
+        .stars {
+            color: gold;
+            margin-right: 10px;
+        }
+        
+        .progress-bar {
+            width: 100px;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-right: 10px;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 3px;
+        }
+        
+        .positive {
+            color: var(--primary);
+        }
+        
+        .negative {
+            color: #f15e5e;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>La Iglesia Bar</h1>
+                <p>Panel de Administración</p>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" class="active"> Dashboard</a></li>
+                <li><a href="#"> Canciones</a></li>
+                <li><a href="#"> Métricas</a></li>
+                <li><a href="#"> Aforo</a></li>
+                <li><a href="#"> Ventas</a></li>
+                <li><a href="#"> Configuración</a></li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h1>Métricas Musicales</h1>
+                <div class="date-filter">
+                    <select id="time-range">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30" selected>Últimos 30 días</option>
+                        <option value="90">Últimos 3 meses</option>
+                    </select>
+                    <button id="apply-filter">Aplicar</button>
+                </div>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Puntuación Promedio</h3>
+                    <div class="value">8.2/10</div>
+                    <div class="trend up">↑ 0.3 desde la semana pasada</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Impacto en Ventas</h3>
+                    <div class="value">+18%</div>
+                    <div class="trend up">↑ 5% desde el mes pasado</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Aforo Promedio</h3>
+                    <div class="value">74%</div>
+                    <div class="trend up">↑ 8% desde el mes pasado</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Canciones Analizadas</h3>
+                    <div class="value">142</div>
+                    <div class="trend up">↑ 12 esta semana</div>
+                </div>
+            </div>
+            
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h2>Relación Música-Ventas
+                        <span style="font-size: 14px; color: #b3b3b3;">Últimos 30 días</span>
+                    </h2>
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h2>Géneros Más Efectivos</h2>
+                    <div class="chart-container">
+                        <canvas id="genresChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Songs Table -->
+            <div class="songs-table">
+                <div class="table-header">
+                    <h2>Canciones Más Influyentes</h2>
+                    <div class="date-filter">
+                        <select>
+                            <option>Por Puntuación</option>
+                            <option>Por Impacto en Ventas</option>
+                            <option>Por Reproducciones</option>
+                        </select>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Canción</th>
+                            <th>Artista</th>
+                            <th>Reproducciones</th>
+                            <th>Puntuación</th>
+                            <th>Impacto Ventas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b2734c71e27f7c5c0c7d5b4a7f8a" class="song-img">
+                                    <div>
+                                        <div>Blinding Lights</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">After Hours</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>The Weeknd</td>
+                            <td>24</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★★★</div>
+                                    <div>9.2/10</div>
+                                </div>
+                            </td>
+                            <td class="positive">+22%</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36" class="song-img">
+                                    <div>
+                                        <div>Save Your Tears</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">After Hours</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>The Weeknd</td>
+                            <td>18</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★★☆</div>
+                                    <div>8.5/10</div>
+                                </div>
+                            </td>
+                            <td class="positive">+18%</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b2732e8ed79e177ff6011076f5f0" class="song-img">
+                                    <div>
+                                        <div>Levitating</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">Future Nostalgia</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>Dua Lipa</td>
+                            <td>22</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★★☆</div>
+                                    <div>8.7/10</div>
+                                </div>
+                            </td>
+                            <td class="positive">+20%</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b2731c1ea7bfc442ecd6c6c8e7e0" class="song-img">
+                                    <div>
+                                        <div>Good 4 U</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">SOUR</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>Olivia Rodrigo</td>
+                            <td>15</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★☆☆</div>
+                                    <div>6.8/10</div>
+                                </div>
+                            </td>
+                            <td class="negative">-5%</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b273b1c4b76e23414c9f20242268" class="song-img">
+                                    <div>
+                                        <div>Stay</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">Stay</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>The Kid LAROI, Justin Bieber</td>
+                            <td>20</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★★☆</div>
+                                    <div>8.0/10</div>
+                                </div>
+                            </td>
+                            <td class="positive">+12%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Cargar canciones desde la API :))))))))))))))
+    async function cargarCanciones() {
+        try {
+            const response = await fetch('/api/canciones-metricas');
+            const data = await response.json();
+            
+            // Limpiar tabla actual
+            const tbody = document.querySelector('.songs-table tbody');
+            tbody.innerHTML = '';
+            
+            // Agregar cada canción
+            data.canciones.forEach(cancion => {
+                const fila = crearFilaCancion(cancion);
+                tbody.appendChild(fila);
+            });
+            
+        } catch (error) {
+            console.error('Error cargando canciones:', error);
+            // Mostrar mensaje de error en la tabla
+            const tbody = document.querySelector('.songs-table tbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #f15e5e;">
+                        Error cargando canciones. Verifica la conexión.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Función para crear una fila de canción
+    function crearFilaCancion(cancion) {
+        const tr = document.createElement('tr');
+        
+        // Convertir puntuación a estrellas
+        const estrellas = convertirPuntuacionEstrellas(cancion.puntuacion);
+        
+        // Determinar clase de impacto
+        const claseImpacto = cancion.impacto_ventas >= 0 ? 'positive' : 'negative';
+        const simboloImpacto = cancion.impacto_ventas >= 0 ? '+' : '';
+        
+        tr.innerHTML = `
+            <td>
+                <div class="song-info">
+                    <img src="${cancion.imagen_url}" class="song-img" alt="${cancion.album}" onerror="this.src='https://via.placeholder.com/40?text=🎵'">
+                    <div>
+                        <div>${cancion.nombre}</div>
+                        <div style="font-size: 12px; color: #b3b3b3;">${cancion.album}</div>
+                    </div>
+                </div>
+            </td>
+            <td>${cancion.artista}</td>
+            <td>${cancion.reproducciones}</td>
+            <td>
+                <div class="rating">
+                    <div class="stars">${estrellas}</div>
+                    <div>${cancion.puntuacion}/10</div>
+                </div>
+            </td>
+            <td class="${claseImpacto}">${simboloImpacto}${cancion.impacto_ventas}%</td>
+        `;
+        
+        return tr;
+    }
+
+    // Función auxiliar para convertir puntuación a estrellas
+    function convertirPuntuacionEstrellas(puntuacion) {
+        const estrellasLlenas = Math.floor(puntuacion / 2);
+        const mediaEstrella = (puntuacion / 2) - estrellasLlenas >= 0.5;
+        const estrellasVacias = 5 - estrellasLlenas - (mediaEstrella ? 1 : 0);
+        
+        return '★'.repeat(estrellasLlenas) + 
+               (mediaEstrella ? '½' : '') + 
+               '☆'.repeat(estrellasVacias);
+    }
+
+
+
+
+
+// Inicializar gráficos cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar datos reales para las gráficas
+    cargarGraficaVentas();
+    cargarCanciones();
+    
+    // Gráfico de géneros más efectivos (mantener por ahora)
+    const genresCtx = document.getElementById('genresChart').getContext('2d');
+    const genresChart = new Chart(genresCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pop', 'Rock', 'Electrónica', 'Hip Hop', 'Reggaeton', 'Otros'],
+            datasets: [{
+                data: [35, 20, 18, 15, 10, 2],
+                backgroundColor: [
+                    '#1DB954',
+                    '#9b59b6',
+                    '#3498db',
+                    '#e74c3c',
+                    '#f39c12',
+                    '#95a5a6'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Filtro de fecha
+    document.getElementById('apply-filter').addEventListener('click', function() {
+        const timeRange = document.getElementById('time-range').value;
+        alert(`Filtrando datos de los últimos ${timeRange} días...`);
+        // Recargar datos con el filtro aplicado
+        cargarGraficaVentas();
+        cargarCanciones();
+    });
+    
+    // Actualizar cada 30 segundos
+    setInterval(function() {
+        cargarGraficaVentas();
+        cargarCanciones();
+    }, 30000);
+});
+
+// Función para cargar la gráfica de ventas con datos reales
+async function cargarGraficaVentas() {
+    try {
+        const response = await fetch('/api/grafica-ventas');
+        const data = await response.json();
+        
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        
+        // Destruir gráfica anterior si existe
+        if (window.salesChartInstance) {
+            window.salesChartInstance.destroy();
+        }
+        
+        window.salesChartInstance = new Chart(salesCtx, {
+            type: 'bar',
+            data: {
+                labels: data.dias,
+                datasets: [{
+                    label: 'Impacto en Ventas (%)',
+                    data: data.ventas_promedio,
+                    backgroundColor: '#1DB954',
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Impacto en Ventas (%)'
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error cargando gráfica de ventas:', error);
+        // Si hay error, mostrar gráfica de ejemplo
+        mostrarGraficaEjemplo();
+    }
+}
+
+// Función de respaldo si la API falla
+function mostrarGraficaEjemplo() {
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    
+    if (window.salesChartInstance) {
+        window.salesChartInstance.destroy();
+    }
+    
+    window.salesChartInstance = new Chart(salesCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+            datasets: [{
+                label: 'Impacto en Ventas (%)',
+                data: [15, 18, 16, 20, 25, 28, 22],
+                backgroundColor: '#1DB954',
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Impacto en Ventas (%)'
+                    }
+                }
+            }
+        }
+    });
+}
+</script>
+</body>
+</html>
