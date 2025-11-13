@@ -6,7 +6,7 @@
 |------------|------------|
 |Jefferson Jair Figueroa Escobar | Jfigueroa@unal.edu.co | 
 | Juan David Beltran Orjuela | jbeltrano@unal.edu.co |
-|John Jairo Paez Albino | correo |
+|John Jairo Paez Albino | jopaeza@unal.edu.co |
 |Juan Sebastain Leguizamón Silva | jleguizamons@unal.edu.co |
 
 
