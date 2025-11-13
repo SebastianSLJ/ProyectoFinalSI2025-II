@@ -1,0 +1,20 @@
+/* App styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  @keyframes wave {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.5); }
+  }
+
+  .animate-wave {
+    animation: wave 1.5s ease-in-out infinite;
+    transform-origin: bottom;
+  }
+
+  .hover\:bg-random:hover {
+    background-color: hsl(calc(360 * var(--rand)), 100%, 60%);
+  }
+}
