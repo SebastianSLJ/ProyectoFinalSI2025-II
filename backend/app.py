@@ -29,15 +29,50 @@ CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
 
+<<<<<<< HEAD
 # Landing page   
 @app.route('/')
 def inicio():    
     return render_template('select.html', url=client.url_login(), url2=url_for('dashboard'))
+=======
+# función para generar el state (verificación de state)
+def generate_random_strings(length):
+    return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
+
+# generación de URL para inicio de sesión y obtención de datos necesarios para el codigo (Documentación de spotify)
+def url_login():
+    state = generate_random_strings(16)
+    session['oauth_state'] = state
+    scope = 'user-read-private user-read-email user-read-playback-state user-read-currently-playing' # Información que estamos solicitando de la API, si no se especifica nada, solo se muestra información publica.  
+    params = {
+        'response_type' : 'code', # Indicado por el API de spotify
+        'client_id' : CLIENT_ID, #Client ID proporcionado en el dashboard de spotify
+        'scope' : scope, # Permisos que estamos solicitando (especificado anteriormente)
+        'redirect_uri' : REDIRECT_URI, # URI de redirección especificado en el dashboard de spotify. 
+        'state' : state # Es un token de seguridad que previene ataques (Opcional pero recomendado)
+    }
+    return f'https://accounts.spotify.com/authorize?{urlencode(params)}'
+
+# Landing page   
+@app.route('/')
+def inicio():    
+    return render_template('select.html', url=url_login(), url2=url_for('dashboard'))
+>>>>>>> 477bba26e23c324336719a19064b5a5de14f510d
 
 # Ruta para el login de spotify
 @app.route('/login')
 def login():
     return redirect(client.url_login())
+
+# Ruta de reproductor
+@app.route('/player')
+def player():
+    return render_template('player.html')
+
+# Ruta del dashboard (admin)
+@app.route('/dashboard')
+def dashboard():
+    return render_template('panel.html')
 
 # Ruta de reproductor
 @app.route('/player')
@@ -69,6 +104,78 @@ def callback():
     global access_token_global
     access_token_global = token_response['access_token']
     return redirect(url_for('player'))
+<<<<<<< HEAD
+=======
+
+# Petición al API para obtención del codigo de inicio.
+def UserToken(code):
+    url = 'https://accounts.spotify.com/api/token'
+    # Header indicado por Spotify
+    headers = {
+        'Content-Type' : 'application/x-www-form-urlencoded'        
+    }
+    # Cuerpo indicado por Spotify (Documentación)
+    body = {    
+        'grant_type' : 'authorization_code',
+        'code' : code,
+        'redirect_uri' : REDIRECT_URI, 
+        'client_id' : CLIENT_ID,        
+        'client_secret': CLIENT_SECRET,      
+    }
+    response = requests.post(url, headers= headers, data=body)
+    return response.json()
+
+
+'''
+# Petición para traer información del usuario (Debug)
+@app.route('/player')
+def player():
+    url = 'https://api.spotify.com/v1/me/player'
+    token = session.get('access_token')
+    
+    if not token:
+        return 'Error: No hay token, por favor inicie sesión'
+    
+    headers = {'Authorization': f'Bearer {token}'}
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        data_player = response.json()
+        id_cancion = data_player['item']['id']
+        id_actual = session.get('ultima_cacion_id')
+        if id_cancion != id_actual:
+            nombre_artista = data_player['item']['artists'][0]['name']
+            img_album = data_player ['item']['album']['images'][0]['url']
+            nombre_album = data_player["item"]["album"]["name"]
+            duracion_ms = data_player['item']['duration_ms']
+            minutos = duracion_ms // 60000
+            segundos = (duracion_ms % 60000) // 1000
+            duracion_formateada = f"{minutos}:{segundos:02d}"
+            name_song = data_player['item']['name']        
+            datos_cancion = {
+            "artista": nombre_artista,
+            "imagen_album": img_album,
+            "album": nombre_album,
+            "duracion": duracion_formateada,
+            "cancion": name_song
+            }
+            insertar_canciones(datos_cancion)
+            session['ultima_cancion_id'] = id_cancion
+            guardada = True
+        else: 
+            guardada = False
+
+        return jsonify({"guardada": guardada, "id": id_cancion})
+
+
+       
+    elif response.status_code == 204:
+        # Usuario no está reproduciendo nada
+        return {"status": "No hay música reproduciéndose"}
+    else:
+        return f"Error {response.status_code}: {response.text}"      
+'''
+>>>>>>> 477bba26e23c324336719a19064b5a5de14f510d
 
 def insertar_canciones(data_song):
     result = data_conn.collection.insert_one(data_song)
