@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Métricas Musicales</title>
+    <link rel="stylesheet" href="../static/panel.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>La Iglesia Bar</h1>
+                <p>Panel de Administración</p>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" class="active"> Dashboard</a></li>
+                <li><a href="#"> Canciones</a></li>
+                <li><a href="#"> Métricas</a></li>
+                <li><a href="#"> Aforo</a></li>
+                <li><a href="#"> Ventas</a></li>
+                <li><a href="#"> Configuración</a></li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h1>Métricas Musicales</h1>
+                <div class="date-filter">
+                    <select id="time-range">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30" selected>Últimos 30 días</option>
+                        <option value="90">Últimos 3 meses</option>
+                    </select>
+                    <button id="apply-filter">Aplicar</button>
+                </div>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Puntuación Promedio</h3>
+                    <div class="value">8.2/10</div>
+                    <div class="trend up">↑ 0.3 desde la semana pasada</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Impacto en Ventas</h3>
+                    <div class="value">+18%</div>
+                    <div class="trend up">↑ 5% desde el mes pasado</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Aforo Promedio</h3>
+                    <div class="value">74%</div>
+                    <div class="trend up">↑ 8% desde el mes pasado</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Canciones Analizadas</h3>
+                    <div class="value">142</div>
+                    <div class="trend up">↑ 12 esta semana</div>
+                </div>
+            </div>
+            
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h2>Relación Música-Ventas
+                        <span style="font-size: 14px; color: #b3b3b3;">Últimos 30 días</span>
+                    </h2>
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h2>Géneros Más Efectivos</h2>
+                    <div class="chart-container">
+                        <canvas id="genresChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Songs Table -->
+            <div class="songs-table">
+                <div class="table-header">
+                    <h2>Canciones Más Influyentes</h2>
+                    <div class="date-filter">
+                        <select>
+                            <option>Por Puntuación</option>
+                            <option>Por Impacto en Ventas</option>
+                            <option>Por Reproducciones</option>
+                        </select>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Canción</th>
+                            <th>Artista</th>
+                            <th>Reproducciones</th>
+                            <th>Puntuación</th>
+                            <th>Impacto Ventas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b2734c71e27f7c5c0c7d5b4a7f8a" class="song-img">
+                                    <div>
+                                        <div>Blinding Lights</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">After Hours</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>The Weeknd</td>
+                            <td>24</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★★★</div>
+                                    <div>9.2/10</div>
+                                </div>
+                            </td>
+                            <td class="positive">+22%</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36" class="song-img">
+                                    <div>
+                                        <div>Save Your Tears</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">After Hours</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>The Weeknd</td>
+                            <td>18</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★★☆</div>
+                                    <div>8.5/10</div>
+                                </div>
+                            </td>
+                            <td class="positive">+18%</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b2732e8ed79e177ff6011076f5f0" class="song-img">
+                                    <div>
+                                        <div>Levitating</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">Future Nostalgia</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>Dua Lipa</td>
+                            <td>22</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★★☆</div>
+                                    <div>8.7/10</div>
+                                </div>
+                            </td>
+                            <td class="positive">+20%</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b2731c1ea7bfc442ecd6c6c8e7e0" class="song-img">
+                                    <div>
+                                        <div>Good 4 U</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">SOUR</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>Olivia Rodrigo</td>
+                            <td>15</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★☆☆</div>
+                                    <div>6.8/10</div>
+                                </div>
+                            </td>
+                            <td class="negative">-5%</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="song-info">
+                                    <img src="https://i.scdn.co/image/ab67616d0000b273b1c4b76e23414c9f20242268" class="song-img">
+                                    <div>
+                                        <div>Stay</div>
+                                        <div style="font-size: 12px; color: #b3b3b3;">Stay</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>The Kid LAROI, Justin Bieber</td>
+                            <td>20</td>
+                            <td>
+                                <div class="rating">
+                                    <div class="stars">★★★★☆</div>
+                                    <div>8.0/10</div>
+                                </div>
+                            </td>
+                            <td class="positive">+12%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Cargar canciones desde la API :))))))))))))))
+    async function cargarCanciones() {
+        try {
+            const response = await fetch('/api/canciones-metricas');
+            const data = await response.json();
+            
+            // Limpiar tabla actual
+            const tbody = document.querySelector('.songs-table tbody');
+            tbody.innerHTML = '';
+            
+            // Agregar cada canción
+            data.canciones.forEach(cancion => {
+                const fila = crearFilaCancion(cancion);
+                tbody.appendChild(fila);
+            });
+            
+        } catch (error) {
+            console.error('Error cargando canciones:', error);
+            // Mostrar mensaje de error en la tabla
+            const tbody = document.querySelector('.songs-table tbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #f15e5e;">
+                        Error cargando canciones. Verifica la conexión.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Función para crear una fila de canción
+    function crearFilaCancion(cancion) {
+        const tr = document.createElement('tr');
+        
+        // Convertir puntuación a estrellas
+        const estrellas = convertirPuntuacionEstrellas(cancion.puntuacion);
+        
+        // Determinar clase de impacto
+        const claseImpacto = cancion.impacto_ventas >= 0 ? 'positive' : 'negative';
+        const simboloImpacto = cancion.impacto_ventas >= 0 ? '+' : '';
+        
+        tr.innerHTML = `
+            <td>
+                <div class="song-info">
+                    <img src="${cancion.imagen_url}" class="song-img" alt="${cancion.album}" onerror="this.src='https://via.placeholder.com/40?text=🎵'">
+                    <div>
+                        <div>${cancion.nombre}</div>
+                        <div style="font-size: 12px; color: #b3b3b3;">${cancion.album}</div>
+                    </div>
+                </div>
+            </td>
+            <td>${cancion.artista}</td>
+            <td>${cancion.reproducciones}</td>
+            <td>
+                <div class="rating">
+                    <div class="stars">${estrellas}</div>
+                    <div>${cancion.puntuacion}/10</div>
+                </div>
+            </td>
+            <td class="${claseImpacto}">${simboloImpacto}${cancion.impacto_ventas}%</td>
+        `;
+        
+        return tr;
+    }
+
+    // Función auxiliar para convertir puntuación a estrellas
+    function convertirPuntuacionEstrellas(puntuacion) {
+        const estrellasLlenas = Math.floor(puntuacion / 2);
+        const mediaEstrella = (puntuacion / 2) - estrellasLlenas >= 0.5;
+        const estrellasVacias = 5 - estrellasLlenas - (mediaEstrella ? 1 : 0);
+        
+        return '★'.repeat(estrellasLlenas) + 
+               (mediaEstrella ? '½' : '') + 
+               '☆'.repeat(estrellasVacias);
+    }
+
+
+
+
+
+// Inicializar gráficos cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar datos reales para las gráficas
+    cargarGraficaVentas();
+    cargarCanciones();
+    
+    // Gráfico de géneros más efectivos (mantener por ahora)
+    const genresCtx = document.getElementById('genresChart').getContext('2d');
+    const genresChart = new Chart(genresCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pop', 'Rock', 'Electrónica', 'Hip Hop', 'Reggaeton', 'Otros'],
+            datasets: [{
+                data: [35, 20, 18, 15, 10, 2],
+                backgroundColor: [
+                    '#1DB954',
+                    '#9b59b6',
+                    '#3498db',
+                    '#e74c3c',
+                    '#f39c12',
+                    '#95a5a6'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Filtro de fecha
+    document.getElementById('apply-filter').addEventListener('click', function() {
+        const timeRange = document.getElementById('time-range').value;
+        alert(`Filtrando datos de los últimos ${timeRange} días...`);
+        // Recargar datos con el filtro aplicado
+        cargarGraficaVentas();
+        cargarCanciones();
+    });
+    
+    // Actualizar cada 30 segundos
+    setInterval(function() {
+        cargarGraficaVentas();
+        cargarCanciones();
+    }, 30000);
+});
+
+// Función para cargar la gráfica de ventas con datos reales
+async function cargarGraficaVentas() {
+    try {
+        const response = await fetch('/api/grafica-ventas');
+        const data = await response.json();
+        
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        
+        // Destruir gráfica anterior si existe
+        if (window.salesChartInstance) {
+            window.salesChartInstance.destroy();
+        }
+        
+        window.salesChartInstance = new Chart(salesCtx, {
+            type: 'bar',
+            data: {
+                labels: data.dias,
+                datasets: [{
+                    label: 'Impacto en Ventas (%)',
+                    data: data.ventas_promedio,
+                    backgroundColor: '#1DB954',
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Impacto en Ventas (%)'
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error cargando gráfica de ventas:', error);
+        // Si hay error, mostrar gráfica de ejemplo
+        mostrarGraficaEjemplo();
+    }
+}
+
+// Función de respaldo si la API falla
+function mostrarGraficaEjemplo() {
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    
+    if (window.salesChartInstance) {
+        window.salesChartInstance.destroy();
+    }
+    
+    window.salesChartInstance = new Chart(salesCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+            datasets: [{
+                label: 'Impacto en Ventas (%)',
+                data: [15, 18, 16, 20, 25, 28, 22],
+                backgroundColor: '#1DB954',
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Impacto en Ventas (%)'
+                    }
+                }
+            }
+        }
+    });
+}
+</script>
+</body>
+</html>
