@@ -34,9 +34,9 @@
             </div>
             
             <div class="controls">
-                <button class="control-btn">⏮</button>
-                <button class="control-btn play-pause">⏸</button>
-                <button class="control-btn">⏭</button>
+                <button class="control-btn" id="btn-previous">⏮</button>
+                <button class="control-btn play-pause" id="btn-play-pause">⏸</button>
+                <button class="control-btn" id="btn-next">⏭</button>
             </div>
         </div>
         
@@ -45,43 +45,169 @@
         </div>
     </div>
 <script>
-async function actualizar() {
-  try {
-    const response = await fetch('/estado');
-    const data = await response.json();
+// Esperar a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM cargado, inicializando controles...');
 
-    if (data.status) {
-      // Si hay un mensaje de estado (probablemente "No se está reproduciendo nada")
-      document.getElementById('track-name').textContent = data.status;
+  async function actualizar() {
+    try {
+      const response = await fetch('/estado');
+      const data = await response.json();
+
+      if (data.status) {
+        // Si hay un mensaje de estado (probablemente "No se está reproduciendo nada")
+        document.getElementById('track-name').textContent = data.status;
+        document.getElementById('artist-name').textContent = '';
+        document.getElementById('album-name').textContent = '';
+        document.getElementById('album-image').src = '';
+        document.getElementById('current-time').textContent = '0:00';
+        document.getElementById('total-time').textContent = '0:00';
+        document.querySelector('.progress').style.width = '0%';
+        document.getElementById('btn-play-pause').textContent = '▶';
+      } else {
+        // Si hay una canción reproduciéndose
+        document.getElementById('track-name').textContent = data.cancion;
+        document.getElementById('artist-name').textContent = data.artista;
+        document.getElementById('album-name').textContent = data.album;
+        document.getElementById('album-image').src = data.imagen_album;
+        
+        // Actualizar tiempos y progreso 
+        document.getElementById('current-time').textContent = '0:00';
+        document.getElementById('total-time').textContent = data.duracion;
+        document.querySelector('.progress').style.width = '45%'; // Ejemplo estático
+        
+        // Actualizar icono de play/pause según el estado
+        if (data.is_playing) {
+          document.getElementById('btn-play-pause').textContent = '⏸';
+        } else {
+          document.getElementById('btn-play-pause').textContent = '▶';
+        }
+      }
+    } catch (err) {
+      console.error("Error actualizando estado:", err);
+      document.getElementById('track-name').textContent = 'No hay musica en reproducción';
       document.getElementById('artist-name').textContent = '';
       document.getElementById('album-name').textContent = '';
-      document.getElementById('album-image').src = '';
-      document.getElementById('current-time').textContent = '0:00';
-      document.getElementById('total-time').textContent = '0:00';
-      document.querySelector('.progress').style.width = '0%';
-    } else {
-      // Si hay una canción reproduciéndose
-      document.getElementById('track-name').textContent = data.cancion;
-      document.getElementById('artist-name').textContent = data.artista;
-      document.getElementById('album-name').textContent = data.album;
-      document.getElementById('album-image').src = data.imagen_album;
-      
-      // Actualizar tiempos y progreso 
-      document.getElementById('current-time').textContent = '0:00';
-      document.getElementById('total-time').textContent = data.duracion;
-      document.querySelector('.progress').style.width = '45%'; // Ejemplo estático
     }
-  } catch (err) {
-    console.error("Error actualizando estado:", err);
-    document.getElementById('track-name').textContent = 'No hay musica en reproducción';
-    document.getElementById('artist-name').textContent = '';
-    document.getElementById('album-name').textContent = '';
   }
-}
 
-// Actualiza cada 5 segundos
-setInterval(actualizar, 5000);
-actualizar();
+  // Función para pausar/reanudar
+  async function togglePlayPause() {
+    console.log('Botón play/pause clickeado');
+    try {
+      const response = await fetch('/api/play-pause', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      console.log('Respuesta play/pause:', data);
+      
+      if (response.ok) {
+        if (data.status === 'paused') {
+          document.getElementById('btn-play-pause').textContent = '▶';
+        } else if (data.status === 'playing') {
+          document.getElementById('btn-play-pause').textContent = '⏸';
+        }
+        // Actualizar el estado inmediatamente
+        setTimeout(actualizar, 200);
+      } else {
+        // Mostrar error al usuario
+        console.error('Error del servidor:', data.error);
+        alert(data.error || 'No se pudo cambiar el estado de reproducción');
+      }
+    } catch (err) {
+      console.error("Error al pausar/reanudar:", err);
+      alert('Error de conexión. Verifica que el servidor esté corriendo.');
+    }
+  }
+
+  // Función para siguiente canción
+  async function nextTrack() {
+    console.log('Botón siguiente clickeado');
+    try {
+      const response = await fetch('/api/next', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Respuesta next:', response.status);
+      
+      if (response.ok) {
+        // Actualizar inmediatamente después de cambiar la canción
+        setTimeout(actualizar, 500);
+      } else {
+        const data = await response.json();
+        console.error('Error del servidor:', data.error);
+        alert(data.error || 'No se pudo cambiar a la siguiente canción');
+      }
+    } catch (err) {
+      console.error("Error al cambiar a siguiente canción:", err);
+      alert('Error de conexión. Verifica que el servidor esté corriendo.');
+    }
+  }
+
+  // Función para canción anterior
+  async function previousTrack() {
+    console.log('Botón anterior clickeado');
+    try {
+      const response = await fetch('/api/previous', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Respuesta previous:', response.status);
+      
+      if (response.ok) {
+        // Actualizar inmediatamente después de cambiar la canción
+        setTimeout(actualizar, 500);
+      } else {
+        const data = await response.json();
+        console.error('Error del servidor:', data.error);
+        alert(data.error || 'No se pudo cambiar a la canción anterior');
+      }
+    } catch (err) {
+      console.error("Error al cambiar a canción anterior:", err);
+      alert('Error de conexión. Verifica que el servidor esté corriendo.');
+    }
+  }
+
+  // Event listeners para los botones
+  const btnPlayPause = document.getElementById('btn-play-pause');
+  const btnNext = document.getElementById('btn-next');
+  const btnPrevious = document.getElementById('btn-previous');
+  
+  if (btnPlayPause) {
+    btnPlayPause.addEventListener('click', togglePlayPause);
+    console.log('Event listener agregado a play/pause');
+  } else {
+    console.error('No se encontró el botón play/pause');
+  }
+  
+  if (btnNext) {
+    btnNext.addEventListener('click', nextTrack);
+    console.log('Event listener agregado a siguiente');
+  } else {
+    console.error('No se encontró el botón siguiente');
+  }
+  
+  if (btnPrevious) {
+    btnPrevious.addEventListener('click', previousTrack);
+    console.log('Event listener agregado a anterior');
+  } else {
+    console.error('No se encontró el botón anterior');
+  }
+
+  // Actualiza cada 1 segundo para respuesta casi instantánea
+  setInterval(actualizar, 1000);
+  actualizar();
+});
 </script>
 </body>
 </html>

@@ -24,6 +24,22 @@ app = Flask(__name__,
 # secret_key obligatoria para el session
 app.secret_key = '_5#y2L"F4Q8z\n\xec]/'
 
+# Crear índices para optimizar búsquedas
+def crear_indices():
+    try:
+        # Índice único en spotify_id para búsquedas rápidas
+        data_conn.collection.create_index([('spotify_id', pymongo.ASCENDING)], unique=True)
+        # Índice en cancion_id para búsquedas de reproducciones
+        data_conn.reproducciones_collection.create_index([('cancion_id', pymongo.ASCENDING)])
+        # Índice compuesto para búsquedas por día y hora
+        data_conn.reproducciones_collection.create_index([('dia_semana', pymongo.ASCENDING), ('hora', pymongo.ASCENDING)])
+        print("Índices creados exitosamente")
+    except Exception as e:
+        print(f"Error creando índices: {e}")
+
+# Crear índices al iniciar
+crear_indices()
+
 # Carga de datos relevantes DOTENV (.env)
 load_dotenv()
 CLIENT_ID = os.getenv('CLIENT_ID')
@@ -72,21 +88,31 @@ def callback():
     return redirect(url_for('player'))
 
 def insertar_canciones(data_song):
-    result = data_conn.collection.insert_one(data_song)
+    # Usar upsert para evitar duplicados y mejorar rendimiento
+    result = data_conn.collection.update_one(
+        {'spotify_id': data_song['spotify_id']},
+        {'$set': data_song},
+        upsert=True
+    )
+    return result.upserted_id if result.upserted_id else None
 
 def insertar_reproduccion(data_reproduccion):
     result = data_conn.reproducciones_collection.insert_one(data_reproduccion)
+    return result.inserted_id
 
+
+# Cache para evitar búsquedas repetidas
+cancion_cache = {}
 
 def loop_player():
     print("loop iniciando correctamente :D")
-    global ultima_cancion_id
+    global ultima_cancion_id, cancion_cache
     ultima_cancion_id = None  # guardamos el último ID visto
     while True:
         try:
             token = globals().get('access_token_global')
             if not token:                
-                time.sleep(10)
+                time.sleep(2)  # Reducido para inicialización más rápida
                 continue            
             url = 'https://api.spotify.com/v1/me/player'            
             headers = {'Authorization': f'Bearer {token}'}
@@ -123,8 +149,15 @@ def loop_player():
                     }
                     insertar_canciones(datos_cancion)
 
-                    # Cola de reproducciones
-                    cancion = data_conn.collection.find_one({'spotify_id': id_cancion})
+                    # Cola de reproducciones - usar cache para evitar búsqueda
+                    if id_cancion in cancion_cache:
+                        cancion = cancion_cache[id_cancion]
+                    else:
+                        # Búsqueda optimizada con índice en spotify_id
+                        cancion = data_conn.collection.find_one({'spotify_id': id_cancion})
+                        if cancion:
+                            cancion_cache[id_cancion] = cancion
+                    
                     if cancion:
                         # Insertar reproduccion con metricas
                         dia_semana = datetime.datetime.now().strftime('%A')  # lunes, martes, etc.
@@ -157,20 +190,55 @@ def loop_player():
                         print(f"Reproducción registrada: {name_song} - Puntuación: {reproduccion_data['puntuacion']}")
                     
                     print(f" Nueva canción detectada y guardada: {name_song}")
-            time.sleep(10)
+            time.sleep(2)  # Reducido a 2 segundos para actualizaciones más rápidas
         except Exception as e:
             print("Error en el loop", e)
-            time.sleep(10)
+            time.sleep(2)  # Reducido también en caso de error
 
 # Endpoint para verificar que cancion se esta reproduciendo 
 @app.route('/estado')
 def estado():
-    ultima = data_conn.collection.find_one(sort=[('_id', -1)])
-    if ultima:
-        ultima['_id'] = str(ultima['_id'])
-        return jsonify(ultima)
-    else:
-        return jsonify({"status": "No hay canciones registradas"})
+    try:
+        # Intentar obtener el estado en tiempo real de Spotify
+        token = session.get('access_token') or globals().get('access_token_global')
+        if token:
+            headers = {'Authorization': f'Bearer {token}'}
+            url = 'https://api.spotify.com/v1/me/player'
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data and 'item' in data:
+                    item = data['item']
+                    return jsonify({
+                        'cancion': item['name'],
+                        'artista': item['artists'][0]['name'],
+                        'album': item['album']['name'],
+                        'imagen_album': item['album']['images'][0]['url'] if item['album']['images'] else '',
+                        'duracion': f"{item['duration_ms'] // 60000}:{(item['duration_ms'] % 60000) // 1000:02d}",
+                        'is_playing': data.get('is_playing', False)
+                    })
+        
+        # Si no hay estado en tiempo real, usar la última canción de la BD
+        ultimas = list(data_conn.collection.find().sort('_id', -1).limit(1))
+        if ultimas:
+            ultima = ultimas[0]
+            ultima['_id'] = str(ultima['_id'])
+            ultima['is_playing'] = False  # No sabemos el estado real
+            return jsonify(ultima)
+        else:
+            return jsonify({"status": "No hay canciones registradas"})
+    except Exception as e:
+        print(f"Error en estado: {e}")
+        # Fallback a BD
+        ultimas = list(data_conn.collection.find().sort('_id', -1).limit(1))
+        if ultimas:
+            ultima = ultimas[0]
+            ultima['_id'] = str(ultima['_id'])
+            ultima['is_playing'] = False
+            return jsonify(ultima)
+        else:
+            return jsonify({"status": "No hay canciones registradas"})
     
 # Calcula métricas agregadas de una canción basándose en sus reproducciones.
 def calcular_metricas_cancion(reproducciones_cancion):
@@ -261,9 +329,16 @@ def canciones_metricas():
     }
     """
     try:
-        # Cargar datos
-        canciones = list(data_conn.collection.find().limit(20))
-        reproducciones = list(data_conn.reproducciones_collection.find())
+        # Cargar solo las últimas 20 canciones ordenadas por ID (más recientes)
+        canciones = list(data_conn.collection.find().sort('_id', -1).limit(20))
+        
+        # Obtener IDs de canciones para filtrar reproducciones
+        cancion_ids = [cancion['_id'] for cancion in canciones]
+        
+        # Cargar solo reproducciones de las canciones seleccionadas (más eficiente)
+        reproducciones = list(data_conn.reproducciones_collection.find(
+            {'cancion_id': {'$in': cancion_ids}}
+        ))
         
         # Agrupar reproducciones por canción para búsqueda O(1)
         repros_por_cancion = agrupar_reproducciones_por_cancion(reproducciones)
@@ -505,6 +580,142 @@ def estadisticas_generales():
         import traceback
         traceback.print_exc()
         return jsonify({'error': 'Error al cargar estadísticas'}), 500
+
+# Endpoint para pausar/reanudar la reproducción
+@app.route('/api/play-pause', methods=['POST'])
+def play_pause():
+    try:
+        token = session.get('access_token') or globals().get('access_token_global')
+        if not token:
+            print("Error: No hay token disponible")
+            return jsonify({'error': 'No autenticado'}), 401
+        
+        headers = {'Authorization': f'Bearer {token}'}
+        
+        # Primero obtenemos el estado actual
+        estado_url = 'https://api.spotify.com/v1/me/player'
+        estado_response = requests.get(estado_url, headers=headers)
+        
+        print(f"Estado response: {estado_response.status_code}")
+        
+        if estado_response.status_code == 204:
+            # No hay dispositivo activo
+            print("Error: No hay dispositivo de Spotify activo")
+            return jsonify({'error': 'No hay dispositivo de Spotify activo. Abre Spotify en tu dispositivo.'}), 400
+        
+        if estado_response.status_code == 200:
+            data = estado_response.json()
+            is_playing = data.get('is_playing', False)
+            
+            print(f"Estado actual - is_playing: {is_playing}")
+            
+            # Si está reproduciendo, pausamos; si está pausado, reanudamos
+            if is_playing:
+                pause_url = 'https://api.spotify.com/v1/me/player/pause'
+                response = requests.put(pause_url, headers=headers)
+                print(f"Pause response: {response.status_code}")
+                if response.status_code in [204, 200]:
+                    return jsonify({'status': 'paused'})
+                else:
+                    error_msg = response.json() if response.text else 'Error desconocido'
+                    print(f"Error pausando: {error_msg}")
+                    return jsonify({'error': 'No se pudo pausar', 'details': error_msg}), 400
+            else:
+                play_url = 'https://api.spotify.com/v1/me/player/play'
+                response = requests.put(play_url, headers=headers)
+                print(f"Play response: {response.status_code}")
+                if response.status_code in [204, 200]:
+                    return jsonify({'status': 'playing'})
+                else:
+                    error_msg = response.json() if response.text else 'Error desconocido'
+                    print(f"Error reproduciendo: {error_msg}")
+                    return jsonify({'error': 'No se pudo reproducir', 'details': error_msg}), 400
+        
+        error_msg = estado_response.json() if estado_response.text else 'Error desconocido'
+        print(f"Error obteniendo estado: {estado_response.status_code} - {error_msg}")
+        return jsonify({'error': 'No se pudo obtener el estado del reproductor', 'details': error_msg}), 400
+        
+    except Exception as e:
+        print(f"Exception en play-pause: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+# Endpoint para siguiente canción
+@app.route('/api/next', methods=['POST'])
+def next_track():
+    try:
+        token = session.get('access_token') or globals().get('access_token_global')
+        if not token:
+            print("Error: No hay token disponible")
+            return jsonify({'error': 'No autenticado'}), 401
+        
+        headers = {'Authorization': f'Bearer {token}'}
+        url = 'https://api.spotify.com/v1/me/player/next'
+        
+        response = requests.post(url, headers=headers)
+        print(f"Next track response: {response.status_code}")
+        
+        if response.status_code in [204, 200]:
+            return jsonify({'status': 'next'})
+        elif response.status_code == 403:
+            error_msg = response.json() if response.text else {}
+            reason = error_msg.get('error', {}).get('reason', 'unknown')
+            print(f"Error 403 en next: {reason}")
+            if reason == 'PREMIUM_REQUIRED':
+                return jsonify({'error': 'Se requiere cuenta Premium de Spotify'}), 403
+            return jsonify({'error': 'Acción no permitida', 'details': error_msg}), 403
+        elif response.status_code == 404:
+            print("Error 404: No hay dispositivo activo")
+            return jsonify({'error': 'No hay dispositivo de Spotify activo'}), 404
+        else:
+            error_msg = response.json() if response.text else 'Error desconocido'
+            print(f"Error en next: {response.status_code} - {error_msg}")
+            return jsonify({'error': 'No se pudo cambiar a la siguiente canción', 'details': error_msg}), 400
+            
+    except Exception as e:
+        print(f"Exception en next: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+# Endpoint para canción anterior
+@app.route('/api/previous', methods=['POST'])
+def previous_track():
+    try:
+        token = session.get('access_token') or globals().get('access_token_global')
+        if not token:
+            print("Error: No hay token disponible")
+            return jsonify({'error': 'No autenticado'}), 401
+        
+        headers = {'Authorization': f'Bearer {token}'}
+        url = 'https://api.spotify.com/v1/me/player/previous'
+        
+        response = requests.post(url, headers=headers)
+        print(f"Previous track response: {response.status_code}")
+        
+        if response.status_code in [204, 200]:
+            return jsonify({'status': 'previous'})
+        elif response.status_code == 403:
+            error_msg = response.json() if response.text else {}
+            reason = error_msg.get('error', {}).get('reason', 'unknown')
+            print(f"Error 403 en previous: {reason}")
+            if reason == 'PREMIUM_REQUIRED':
+                return jsonify({'error': 'Se requiere cuenta Premium de Spotify'}), 403
+            return jsonify({'error': 'Acción no permitida', 'details': error_msg}), 403
+        elif response.status_code == 404:
+            print("Error 404: No hay dispositivo activo")
+            return jsonify({'error': 'No hay dispositivo de Spotify activo'}), 404
+        else:
+            error_msg = response.json() if response.text else 'Error desconocido'
+            print(f"Error en previous: {response.status_code} - {error_msg}")
+            return jsonify({'error': 'No se pudo cambiar a la canción anterior', 'details': error_msg}), 400
+            
+    except Exception as e:
+        print(f"Exception en previous: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     hilo = threading.Thread(target=loop_player, daemon=True)

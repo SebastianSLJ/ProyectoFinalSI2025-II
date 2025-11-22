@@ -126,10 +126,16 @@
             cursor: pointer;
             opacity: 0.8;
             transition: opacity 0.3s;
+            padding: 10px;
         }
         
         .control-btn:hover {
             opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
         }
         
         .play-pause {
@@ -142,6 +148,10 @@
             align-items: center;
             font-size: 28px;
             box-shadow: 0 5px 15px rgba(29, 185, 84, 0.4);
+        }
+        
+        .play-pause:hover {
+            box-shadow: 0 7px 20px rgba(29, 185, 84, 0.6);
         }
         
         .footer {
