@@ -71,10 +71,15 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('album-name').textContent = data.album;
         document.getElementById('album-image').src = data.imagen_album;
         
-        // Actualizar tiempos y progreso 
-        document.getElementById('current-time').textContent = '0:00';
+        // Actualizar tiempos y progreso con datos reales
+        const currentMs = data.progress_ms || 0;
+        const durationMs = data.duration_ms || 0;
+        const currentMin = Math.floor(currentMs / 60000);
+        const currentSec = Math.floor((currentMs % 60000) / 1000);
+        
+        document.getElementById('current-time').textContent = `${currentMin}:${currentSec.toString().padStart(2, '0')}`;
         document.getElementById('total-time').textContent = data.duracion;
-        document.querySelector('.progress').style.width = '45%'; // Ejemplo estático
+        document.querySelector('.progress').style.width = `${data.progress_percent || 0}%`;
         
         // Actualizar icono de play/pause según el estado
         if (data.is_playing) {
@@ -178,10 +183,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // Función para buscar en la línea de tiempo
+  async function seekToPosition(positionMs) {
+    try {
+      const response = await fetch(`/api/seek?position_ms=${positionMs}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        // Actualizar inmediatamente después de buscar
+        setTimeout(actualizar, 200);
+      } else {
+        const data = await response.json();
+        console.error('Error del servidor:', data.error);
+      }
+    } catch (err) {
+      console.error("Error al buscar en la canción:", err);
+    }
+  }
+
   // Event listeners para los botones
   const btnPlayPause = document.getElementById('btn-play-pause');
   const btnNext = document.getElementById('btn-next');
   const btnPrevious = document.getElementById('btn-previous');
+  const progressBar = document.querySelector('.progress-bar');
   
   if (btnPlayPause) {
     btnPlayPause.addEventListener('click', togglePlayPause);
@@ -202,6 +230,32 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Event listener agregado a anterior');
   } else {
     console.error('No se encontró el botón anterior');
+  }
+
+  // Event listener para hacer clickeable la barra de progreso
+  if (progressBar) {
+    progressBar.addEventListener('click', async function(e) {
+      const rect = progressBar.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const percentClicked = clickX / rect.width;
+      
+      // Obtener la duración actual de la canción
+      try {
+        const response = await fetch('/estado');
+        const data = await response.json();
+        
+        if (data.duration_ms) {
+          const positionMs = Math.floor(data.duration_ms * percentClicked);
+          await seekToPosition(positionMs);
+        }
+      } catch (err) {
+        console.error('Error al obtener duración:', err);
+      }
+    });
+    
+    // Cambiar cursor al pasar sobre la barra
+    progressBar.style.cursor = 'pointer';
+    console.log('Event listener agregado a barra de progreso');
   }
 
   // Actualiza cada 1 segundo para respuesta casi instantánea

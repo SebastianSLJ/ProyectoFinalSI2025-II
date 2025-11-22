@@ -210,13 +210,19 @@ def estado():
                 data = response.json()
                 if data and 'item' in data:
                     item = data['item']
+                    progress_ms = data.get('progress_ms', 0)
+                    duration_ms = item['duration_ms']
+                    
                     return jsonify({
                         'cancion': item['name'],
                         'artista': item['artists'][0]['name'],
                         'album': item['album']['name'],
                         'imagen_album': item['album']['images'][0]['url'] if item['album']['images'] else '',
-                        'duracion': f"{item['duration_ms'] // 60000}:{(item['duration_ms'] % 60000) // 1000:02d}",
-                        'is_playing': data.get('is_playing', False)
+                        'duracion': f"{duration_ms // 60000}:{(duration_ms % 60000) // 1000:02d}",
+                        'is_playing': data.get('is_playing', False),
+                        'progress_ms': progress_ms,
+                        'duration_ms': duration_ms,
+                        'progress_percent': (progress_ms / duration_ms * 100) if duration_ms > 0 else 0
                     })
         
         # Si no hay estado en tiempo real, usar la última canción de la BD
@@ -713,6 +719,48 @@ def previous_track():
             
     except Exception as e:
         print(f"Exception en previous: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+# Endpoint para buscar posición en la canción (seek)
+@app.route('/api/seek', methods=['POST'])
+def seek_position():
+    try:
+        token = session.get('access_token') or globals().get('access_token_global')
+        if not token:
+            print("Error: No hay token disponible")
+            return jsonify({'error': 'No autenticado'}), 401
+        
+        position_ms = request.args.get('position_ms', type=int)
+        if position_ms is None:
+            return jsonify({'error': 'Se requiere position_ms'}), 400
+        
+        headers = {'Authorization': f'Bearer {token}'}
+        url = f'https://api.spotify.com/v1/me/player/seek?position_ms={position_ms}'
+        
+        response = requests.put(url, headers=headers)
+        print(f"Seek response: {response.status_code}")
+        
+        if response.status_code in [204, 200]:
+            return jsonify({'status': 'seeked', 'position_ms': position_ms})
+        elif response.status_code == 403:
+            error_msg = response.json() if response.text else {}
+            reason = error_msg.get('error', {}).get('reason', 'unknown')
+            print(f"Error 403 en seek: {reason}")
+            if reason == 'PREMIUM_REQUIRED':
+                return jsonify({'error': 'Se requiere cuenta Premium de Spotify'}), 403
+            return jsonify({'error': 'Acción no permitida', 'details': error_msg}), 403
+        elif response.status_code == 404:
+            print("Error 404: No hay dispositivo activo")
+            return jsonify({'error': 'No hay dispositivo de Spotify activo'}), 404
+        else:
+            error_msg = response.json() if response.text else 'Error desconocido'
+            print(f"Error en seek: {response.status_code} - {error_msg}")
+            return jsonify({'error': 'No se pudo buscar en la canción', 'details': error_msg}), 400
+            
+    except Exception as e:
+        print(f"Exception en seek: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
