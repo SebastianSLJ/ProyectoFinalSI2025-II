@@ -271,6 +271,149 @@
             color: #f15e5e;
         }
         
+        /* Panel de detalles del día */
+        .detalle-panel {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4);
+            margin-bottom: 30px;
+            overflow: hidden;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .detalle-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), #1ed760);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .detalle-header h2 {
+            font-size: 20px;
+            margin: 0;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--light);
+            font-size: 24px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .close-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .detalle-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .detalle-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .detalle-label {
+            font-size: 12px;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .detalle-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .detalle-horas {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .detalle-horas h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: var(--gray);
+        }
+        
+        .horas-badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .hora-badge {
+            background-color: rgba(29, 185, 84, 0.2);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--primary);
+        }
+        
+        .detalle-canciones {
+            padding: 20px;
+        }
+        
+        .detalle-canciones h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: var(--gray);
+        }
+        
+        .detalle-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .detalle-table th {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            font-size: 13px;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .detalle-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .detalle-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .detalle-table tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
         /* Responsive */
         @media (max-width: 1024px) {
             .charts-grid {
@@ -290,6 +433,10 @@
             .stats-grid {
                 grid-template-columns: 1fr 1fr;
             }
+            
+            .detalle-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
         
         @media (max-width: 480px) {
@@ -301,5 +448,9 @@
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 15px;
+            }
+            
+            .detalle-stats {
+                grid-template-columns: 1fr;
             }
         }

@@ -79,6 +79,57 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Panel de detalles del día (inicialmente oculto) -->
+            <div id="detalle-dia-panel" class="detalle-panel" style="display: none;">
+                <div class="detalle-header">
+                    <h2 id="detalle-titulo">Detalles del Día</h2>
+                    <button class="close-btn" onclick="cerrarDetallePanel()">✕</button>
+                </div>
+                
+                <div class="detalle-stats">
+                    <div class="detalle-stat">
+                        <span class="detalle-label">Reproducciones</span>
+                        <span class="detalle-value" id="detalle-reproducciones">--</span>
+                    </div>
+                    <div class="detalle-stat">
+                        <span class="detalle-label">Impacto Promedio</span>
+                        <span class="detalle-value positive" id="detalle-impacto">--%</span>
+                    </div>
+                    <div class="detalle-stat">
+                        <span class="detalle-label">Puntuación</span>
+                        <span class="detalle-value" id="detalle-puntuacion">--/10</span>
+                    </div>
+                    <div class="detalle-stat">
+                        <span class="detalle-label">Aforo</span>
+                        <span class="detalle-value" id="detalle-aforo">--%</span>
+                    </div>
+                </div>
+                
+                <div class="detalle-horas">
+                    <h3>Horas Pico</h3>
+                    <div id="horas-pico-container" class="horas-badges">
+                        <!-- Se llenarán dinámicamente -->
+                    </div>
+                </div>
+                
+                <div class="detalle-canciones">
+                    <h3>Canciones Más Reproducidas</h3>
+                    <table class="detalle-table">
+                        <thead>
+                            <tr>
+                                <th>Canción</th>
+                                <th>Reproducciones</th>
+                                <th>Puntuación</th>
+                                <th>Impacto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detalle-canciones-body">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             
             <!-- Songs Table -->
             <div class="songs-table">
@@ -432,18 +483,35 @@ async function cargarGraficaVentas() {
                     label: 'Impacto en Ventas (%)',
                     data: data.ventas_promedio,
                     backgroundColor: '#1DB954',
-                    borderWidth: 0
+                    borderWidth: 0,
+                    hoverBackgroundColor: '#1ed760'
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onClick: (event, activeElements) => {
+                    if (activeElements.length > 0) {
+                        const index = activeElements[0].index;
+                        const dia = data.dias[index];
+                        cargarDetallesDia(dia);
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
                         title: {
                             display: true,
                             text: 'Impacto en Ventas (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Impacto: ${context.parsed.y}% (Click para más detalles)`;
+                            }
                         }
                     }
                 }
@@ -519,6 +587,85 @@ document.addEventListener('DOMContentLoaded', function() {
         cargarEstadisticasGenerales();
     }, 30000);
 });
+
+// Función para cargar detalles de un día específico
+async function cargarDetallesDia(dia) {
+    try {
+        const response = await fetch(`/api/detalles-dia/${encodeURIComponent(dia)}`);
+        const data = await response.json();
+        
+        // Actualizar título
+        document.getElementById('detalle-titulo').textContent = `Detalles de ${data.dia}`;
+        
+        // Actualizar estadísticas
+        document.getElementById('detalle-reproducciones').textContent = data.total_reproducciones;
+        
+        const impactoElement = document.getElementById('detalle-impacto');
+        impactoElement.textContent = `${data.impacto_promedio >= 0 ? '+' : ''}${data.impacto_promedio}%`;
+        impactoElement.className = `detalle-value ${data.impacto_promedio >= 0 ? 'positive' : 'negative'}`;
+        
+        document.getElementById('detalle-puntuacion').textContent = `${data.puntuacion_promedio}/10`;
+        document.getElementById('detalle-aforo').textContent = `${data.aforo_promedio}%`;
+        
+        // Actualizar horas pico
+        const horasContainer = document.getElementById('horas-pico-container');
+        horasContainer.innerHTML = '';
+        data.horas_pico.forEach(hora => {
+            const badge = document.createElement('span');
+            badge.className = 'hora-badge';
+            badge.textContent = `${hora}:00`;
+            horasContainer.appendChild(badge);
+        });
+        
+        // Actualizar tabla de canciones
+        const tbody = document.getElementById('detalle-canciones-body');
+        tbody.innerHTML = '';
+        
+        if (data.canciones.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #b3b3b3;">
+                        No hay datos para este día
+                    </td>
+                </tr>
+            `;
+        } else {
+            data.canciones.forEach(cancion => {
+                const tr = document.createElement('tr');
+                const impactoClass = cancion.impacto >= 0 ? 'positive' : 'negative';
+                const simbolo = cancion.impacto >= 0 ? '+' : '';
+                
+                tr.innerHTML = `
+                    <td>
+                        <div class="song-info">
+                            <img src="${cancion.imagen_url}" class="song-img" alt="${cancion.album}" onerror="this.src='https://via.placeholder.com/40?text=🎵'">
+                            <div>
+                                <div>${cancion.nombre}</div>
+                                <div style="font-size: 11px; color: #b3b3b3;">${cancion.artista}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${cancion.reproducciones}</td>
+                    <td>${cancion.puntuacion}/10</td>
+                    <td class="${impactoClass}">${simbolo}${cancion.impacto}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        // Mostrar panel
+        document.getElementById('detalle-dia-panel').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error cargando detalles del día:', error);
+        alert('Error al cargar los detalles del día. Inténtalo de nuevo.');
+    }
+}
+
+// Función para cerrar el panel de detalles
+function cerrarDetallePanel() {
+    document.getElementById('detalle-dia-panel').style.display = 'none';
+}
 
 
 </script>

@@ -587,6 +587,143 @@ def estadisticas_generales():
         traceback.print_exc()
         return jsonify({'error': 'Error al cargar estadísticas'}), 500
 
+@app.route('/api/detalles-dia/<dia>')
+def detalles_dia(dia):
+    """
+    Retorna información detallada de un día específico de la semana.
+    
+    Args:
+        dia: Nombre del día en español (Lunes, Martes, etc.)
+    
+    Respuesta:
+    {
+        'dia': 'Viernes',
+        'impacto_promedio': 26.6,
+        'puntuacion_promedio': 8.4,
+        'aforo_promedio': 82,
+        'total_reproducciones': 45,
+        'canciones': [
+            {
+                'nombre': 'Canción',
+                'artista': 'Artista',
+                'reproducciones': 3,
+                'puntuacion': 8.5,
+                'impacto': 22.1,
+                'imagen_url': '...'
+            }
+        ],
+        'horas_pico': [21, 22, 20]  # Horas con más actividad
+    }
+    """
+    try:
+        # Mapeo de días español a inglés
+        dias_map = {
+            'Lunes': 'Monday',
+            'Martes': 'Tuesday',
+            'Miércoles': 'Wednesday',
+            'Jueves': 'Thursday',
+            'Viernes': 'Friday',
+            'Sábado': 'Saturday',
+            'Domingo': 'Sunday'
+        }
+        
+        dia_ingles = dias_map.get(dia)
+        if not dia_ingles:
+            return jsonify({'error': 'Día no válido'}), 400
+        
+        # Obtener reproducciones del día
+        reproducciones = list(data_conn.reproducciones_collection.find({'dia_semana': dia_ingles}))
+        
+        if not reproducciones:
+            return jsonify({
+                'dia': dia,
+                'impacto_promedio': 0,
+                'puntuacion_promedio': 0,
+                'aforo_promedio': 0,
+                'total_reproducciones': 0,
+                'canciones': [],
+                'horas_pico': []
+            })
+        
+        # Calcular métricas generales del día
+        total_reproducciones = len(reproducciones)
+        impacto_promedio = round(sum(r['impacto_ventas'] for r in reproducciones) / total_reproducciones, 1)
+        puntuacion_promedio = round(sum(r['puntuacion'] for r in reproducciones) / total_reproducciones, 1)
+        aforo_promedio = round(sum(r.get('aforo', 0) for r in reproducciones) / total_reproducciones)
+        
+        # Agrupar reproducciones por canción
+        canciones_dict = {}
+        horas_count = {}
+        
+        for repro in reproducciones:
+            cancion_id = str(repro['cancion_id'])
+            hora = repro.get('hora', 0)
+            
+            # Contar horas
+            horas_count[hora] = horas_count.get(hora, 0) + 1
+            
+            if cancion_id not in canciones_dict:
+                canciones_dict[cancion_id] = {
+                    'cancion_id': cancion_id,
+                    'reproducciones': 0,
+                    'puntuaciones': [],
+                    'impactos': []
+                }
+            
+            canciones_dict[cancion_id]['reproducciones'] += 1
+            canciones_dict[cancion_id]['puntuaciones'].append(repro['puntuacion'])
+            canciones_dict[cancion_id]['impactos'].append(repro['impacto_ventas'])
+        
+        # Obtener IDs de canciones
+        cancion_ids = [ObjectId(cid) for cid in canciones_dict.keys()]
+        canciones_info = list(data_conn.collection.find({'_id': {'$in': cancion_ids}}))
+        
+        # Crear mapa de canciones
+        canciones_map = {str(c['_id']): c for c in canciones_info}
+        
+        # Formatear canciones para respuesta
+        canciones_formateadas = []
+        for cancion_id, stats in canciones_dict.items():
+            cancion = canciones_map.get(cancion_id)
+            if cancion:
+                puntuacion_prom = round(sum(stats['puntuaciones']) / len(stats['puntuaciones']), 1)
+                impacto_prom = round(sum(stats['impactos']) / len(stats['impactos']), 1)
+                
+                canciones_formateadas.append({
+                    'nombre': cancion['cancion'],
+                    'artista': cancion['artista'],
+                    'album': cancion['album'],
+                    'reproducciones': stats['reproducciones'],
+                    'puntuacion': puntuacion_prom,
+                    'impacto': impacto_prom,
+                    'imagen_url': cancion['imagen_album']
+                })
+        
+        # Ordenar canciones por reproducciones
+        canciones_formateadas.sort(key=lambda x: x['reproducciones'], reverse=True)
+        
+        # Obtener las 3 horas con más actividad
+        horas_pico = sorted(horas_count.items(), key=lambda x: x[1], reverse=True)[:3]
+        horas_pico = [h[0] for h in horas_pico]
+        
+        respuesta = {
+            'dia': dia,
+            'impacto_promedio': impacto_promedio,
+            'puntuacion_promedio': puntuacion_promedio,
+            'aforo_promedio': aforo_promedio,
+            'total_reproducciones': total_reproducciones,
+            'canciones': canciones_formateadas[:10],  # Top 10 canciones
+            'horas_pico': horas_pico
+        }
+        
+        return jsonify(respuesta)
+        
+    except Exception as e:
+        print(f"Error en detalles-dia: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Error al cargar detalles del día'}), 500
+
 # Endpoint para pausar/reanudar la reproducción
 @app.route('/api/play-pause', methods=['POST'])
 def play_pause():
