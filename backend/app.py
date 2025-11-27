@@ -860,7 +860,7 @@ def kpis_principales():
                 'reproducciones_cambio': 0
             })        
         
-        ahora = datetime.now()
+        ahora = datetime.datetime.now()
         hace_7_dias = ahora - timedelta(days=1)
         hace_14_dias = ahora - timedelta(days=2)
         
@@ -926,12 +926,10 @@ def metricas_negocio():
                 'ticket_promedio': 0,
                 'ticket_cambio': 0,
                 'conversion_musical': 0,
-                'conversion_cambio': 0,
-                'roi_musical': 0,
-                'roi_cambio': 0
+                'conversion_cambio': 0
             })   
         
-        ahora = datetime.now()
+        ahora = datetime.datetime.now()
         hace_7_dias = ahora - timedelta(days=7)
         hace_14_dias = ahora - timedelta(days=14)
         
@@ -951,8 +949,7 @@ def metricas_negocio():
                 return {
                     'ingresos': 0,
                     'ticket': 0,
-                    'conversion': 0,
-                    'roi': 0
+                    'conversion': 0
                 }
             
             # Simular ingresos basados en impacto de ventas y aforo
@@ -967,18 +964,12 @@ def metricas_negocio():
             
             # Conversión musical: % de canciones con impacto positivo
             impactos_positivos = sum(1 for r in periodo if r['impacto_ventas'] > 0)
-            conversion = (impactos_positivos / len(periodo)) * 100
-            
-            # ROI Musical: retorno basado en puntuación vs impacto
-            puntuacion_prom = sum(r['puntuacion'] for r in periodo) / len(periodo)
-            impacto_prom = sum(r['impacto_ventas'] for r in periodo) / len(periodo)
-            roi = (impacto_prom / puntuacion_prom) if puntuacion_prom > 0 else 0
-            
+            conversion = (impactos_positivos / len(periodo)) * 100           
+
             return {
                 'ingresos': ingresos_total,
                 'ticket': ticket_promedio,
-                'conversion': conversion,
-                'roi': roi
+                'conversion': conversion
             }
         
         metricas_anterior = calcular_metricas_negocio(periodo_anterior)
@@ -996,9 +987,7 @@ def metricas_negocio():
             'ticket_promedio': round(metricas_actual['ticket']),
             'ticket_cambio': calcular_cambio(metricas_actual['ticket'], metricas_anterior['ticket']),
             'conversion_musical': round(metricas_actual['conversion']),
-            'conversion_cambio': calcular_cambio(metricas_actual['conversion'], metricas_anterior['conversion']),
-            'roi_musical': round(metricas_actual['roi'], 1),
-            'roi_cambio': calcular_cambio(metricas_actual['roi'], metricas_anterior['roi'])
+            'conversion_cambio': calcular_cambio(metricas_actual['conversion'], metricas_anterior['conversion'])
         }
         
         return jsonify(respuesta)

@@ -150,7 +150,7 @@ async function cargarMetricasNegocio() {
         // Tarjetas de métricas en el orden del HTML
         const tarjetas = document.querySelectorAll('.kpi-grid.tertiary .kpi-card-metric');
         
-        if (tarjetas.length >= 4) {
+        if (tarjetas.length >= 3) {
             // 1. Ingresos Totales
             actualizarMetricCard(tarjetas[0], {
                 value: `$${data.ingresos_totales.toLocaleString()}`,
@@ -170,16 +170,8 @@ async function cargarMetricasNegocio() {
                 value: `${data.conversion_musical}%`,
                 change: data.conversion_cambio,
                 changeText: `${data.conversion_cambio >= 0 ? '+' : ''}${data.conversion_cambio}% vs. anterior`
-            });
-            
-            // 4. ROI Musical
-            actualizarMetricCard(tarjetas[3], {
-                value: `${data.roi_musical}x`,
-                change: data.roi_cambio,
-                changeText: `${data.roi_cambio >= 0 ? '+' : ''}${data.roi_cambio}% vs. anterior`
-            });
+            });   
         }
-        
     } catch (error) {
         console.error('Error cargando métricas de negocio:', error);
     }
