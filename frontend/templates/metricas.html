@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Métricas KPI - La Iglesia Bar</title>
+    <link rel="stylesheet" href="../static/css/metricas.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>La Iglesia Bar</h1>
+                <p>Panel de Administración</p>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="#">Canciones</a></li>
+                <li><a href="/metricas" class="active">Métricas</a></li>
+                <li><a href="#">Aforo</a></li>
+                <li><a href="#">Ventas</a></li>
+                <li><a href="#">Configuración</a></li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h1>Métricas y KPIs</h1>
+                <div class="date-filter">
+                    <select id="time-range">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30" selected>Últimos 30 días</option>
+                        <option value="90">Últimos 3 meses</option>
+                    </select>
+                    <button id="apply-filter">Aplicar</button>
+                </div>
+            </div>
+
+            <!-- KPIs Principales -->
+            <div class="kpi-section">
+                <h2 class="section-title">KPIs Principales</h2>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-icon"></span>
+                            <span class="kpi-label">Puntuación Promedio</span>
+                        </div>
+                        <div class="kpi-value">--/10</div>
+                        <div class="kpi-comparison">
+                            <span class="comparison-label">vs. período anterior:</span>
+                            <span class="comparison-value neutral">--</span>
+                        </div>
+                        <div class="kpi-bar">
+                            <div class="kpi-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-icon"></span>
+                            <span class="kpi-label">Impacto en Ventas</span>
+                        </div>
+                        <div class="kpi-value">--%</div>
+                        <div class="kpi-comparison">
+                            <span class="comparison-label">vs. período anterior:</span>
+                            <span class="comparison-value neutral">--</span>
+                        </div>
+                        <div class="kpi-bar">
+                            <div class="kpi-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-icon"></span>
+                            <span class="kpi-label">Aforo Promedio</span>
+                        </div>
+                        <div class="kpi-value">--%</div>
+                        <div class="kpi-comparison">
+                            <span class="comparison-label">vs. período anterior:</span>
+                            <span class="comparison-value neutral">--</span>
+                        </div>
+                        <div class="kpi-bar">
+                            <div class="kpi-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-icon"></span>
+                            <span class="kpi-label">Reproducciones Totales</span>
+                        </div>
+                        <div class="kpi-value">--</div>
+                        <div class="kpi-comparison">
+                            <span class="comparison-label">vs. período anterior:</span>
+                            <span class="comparison-value neutral">--</span>
+                        </div>
+                        <div class="kpi-bar">
+                            <div class="kpi-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs de Rendimiento -->
+            <div class="kpi-section">
+                <h2 class="section-title">Rendimiento Musical</h2>
+                <div class="kpi-grid secondary">
+                    <div class="kpi-card-small">
+                        <div class="kpi-small-icon"></div>
+                        <div class="kpi-small-label">Mejor Canción</div>
+                        <div class="kpi-small-value">--</div>
+                        <div class="kpi-small-detail">Puntuación: --/10</div>
+                    </div>
+
+                    <div class="kpi-card-small">
+                        <div class="kpi-small-icon"></div>
+                        <div class="kpi-small-label">Mejor Artista</div>
+                        <div class="kpi-small-value">--</div>
+                        <div class="kpi-small-detail">Impacto: --%</div>
+                    </div>
+
+                    <div class="kpi-card-small">
+                        <div class="kpi-small-icon"></div>
+                        <div class="kpi-small-label">Género Top</div>
+                        <div class="kpi-small-value">--</div>
+                        <div class="kpi-small-detail">-- reproducciones</div>
+                    </div>
+
+                    <div class="kpi-card-small">
+                        <div class="kpi-small-icon"></div>
+                        <div class="kpi-small-label">Hora Pico</div>
+                        <div class="kpi-small-value">--</div>
+                        <div class="kpi-small-detail">Mayor actividad</div>
+                    </div>
+
+                    <div class="kpi-card-small">
+                        <div class="kpi-small-icon"></div>
+                        <div class="kpi-small-label">Mejor Día</div>
+                        <div class="kpi-small-value">--</div>
+                        <div class="kpi-small-detail">Promedio: $--</div>
+                    </div>
+
+                    <div class="kpi-card-small">
+                        <div class="kpi-small-icon"></div>
+                        <div class="kpi-small-label">Tendencia Actual</div>
+                        <div class="kpi-small-value">--</div>
+                        <div class="kpi-small-detail">En aumento</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs de Negocio -->
+            <div class="kpi-section">
+                <h2 class="section-title">Métricas de Negocio</h2>
+                <div class="kpi-grid tertiary">
+                    <div class="kpi-card-metric">
+                        <div class="metric-top">
+                            <span class="metric-label">Ingresos Totales</span>
+                            <span class="metric-icon"></span>
+                        </div>
+                        <div class="metric-value">$--</div>
+                        <div class="metric-change positive">+--% vs. anterior</div>
+                    </div>
+
+                    <div class="kpi-card-metric">
+                        <div class="metric-top">
+                            <span class="metric-label">Ticket Promedio</span>
+                            <span class="metric-icon"></span>
+                        </div>
+                        <div class="metric-value">$--</div>
+                        <div class="metric-change neutral">+--% vs. anterior</div>
+                    </div>
+
+                    <div class="kpi-card-metric">
+                        <div class="metric-top">
+                            <span class="metric-label">Conversión Musical</span>
+                            <span class="metric-icon"></span>
+                        </div>
+                        <div class="metric-value">--%</div>
+                        <div class="metric-change positive">+--% vs. anterior</div>
+                    </div>
+
+                    <div class="kpi-card-metric">
+                        <div class="metric-top">
+                            <span class="metric-label">ROI Musical</span>
+                            <span class="metric-icon"></span>
+                        </div>
+                        <div class="metric-value">--x</div>
+                        <div class="metric-change positive">+--% vs. anterior</div>
+                    </div>
+                </div>
+            </div>
+
+            
+
+            <!-- Resumen Rápido -->
+            <div class="quick-summary">
+                <h2 class="section-title">Resumen Rápido</h2>
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-icon"></div>
+                        <div class="summary-content">
+                            <div class="summary-title">Total Canciones</div>
+                            <div class="summary-value">--</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon"></div>
+                        <div class="summary-content">
+                            <div class="summary-title">Géneros Únicos</div>
+                            <div class="summary-value">--</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon"></div>
+                        <div class="summary-content">
+                            <div class="summary-title">Artistas Únicos</div>
+                            <div class="summary-value">--</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon"></div>
+                        <div class="summary-content">
+                            <div class="summary-title">Tiempo Total</div>
+                            <div class="summary-value">-- hrs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/metricas.js"></script>
+</body>
+</html>

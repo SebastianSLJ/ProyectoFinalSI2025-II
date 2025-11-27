@@ -13,7 +13,7 @@ def generate_random_strings(length):
 def url_login():
     state = generate_random_strings(16)
     session['oauth_state'] = state
-    scope = 'user-read-private user-read-email user-read-playback-state user-read-currently-playing' # Información que estamos solicitando de la API, si no se especifica nada, solo se muestra información publica.  
+    scope = 'user-read-private user-read-email user-read-playback-state user-read-currently-playing user-modify-playback-state' # Información que estamos solicitando de la API, si no se especifica nada, solo se muestra información publica.  
     params = {
         'response_type' : 'code', # Indicado por el API de spotify
         'client_id' : Config.CLIENT_ID, #Client ID proporcionado en el dashboard de spotify
